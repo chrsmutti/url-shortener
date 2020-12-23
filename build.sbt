@@ -13,8 +13,7 @@ ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 ThisBuild / scalafixScalaBinaryVersion := CrossVersion.binaryScalaVersion(scalaVersion.value)
 ThisBuild / scalafixDependencies += com.github.liancheng.`organize-imports`
 
-ThisBuild / publish := {}
-ThisBuild / publishLocal := {}
+ThisBuild / publish / skip := true
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
