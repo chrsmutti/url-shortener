@@ -12,7 +12,7 @@ object URLShortener extends IOApp {
 
   import org.http4s.dsl.io._
 
-  def heartbeat: HttpRoutes[IO] = HttpRoutes
+  private def heartbeat: HttpRoutes[IO] = HttpRoutes
     .of[IO] { case GET -> Root / "heartbeat" =>
       Ok("i'm alive")
     }
@@ -21,15 +21,14 @@ object URLShortener extends IOApp {
     for {
       adjs <- IO(Source.fromResource("adjs.txt")).map(_.getLines().toList)
       nouns <- IO(Source.fromResource("nouns.txt")).map(_.getLines().toList)
-
-      rr = RedirectRepository[IO]
-      haiku = Haiku[IO](adjs, nouns, 1000 to 9999)
-      service = RedirectService[IO](rr, haiku)
+      rr <- LiveRedirects.make[IO]
+      haiku <- LiveHaikus.make[IO](adjs, nouns, 1000 to 9999)
+      redirect <- RedirectRoutes.make[IO](rr, haiku)
 
       exitCode <- BlazeServerBuilder[IO](global)
         .bindHttp(8080, "0.0.0.0")
         .withHttpApp(heartbeat.orNotFound)
-        .withHttpApp(service.routes.orNotFound)
+        .withHttpApp(redirect.routes.orNotFound)
         .withSocketKeepAlive(true)
         .serve
         .compile

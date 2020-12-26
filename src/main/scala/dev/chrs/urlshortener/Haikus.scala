@@ -5,13 +5,13 @@ import scala.util.Random.nextInt
 import cats.effect._
 import cats.implicits._
 
-object Haiku {
-  def apply[F[_]](adjs: List[String], nouns: List[String], ra: Range)(implicit F: Effect[F]) =
-    new HaikuImpl[F](adjs, nouns, ra)
+trait Haikus[F[_]] {
+  def get(): F[String]
 }
 
-trait Haiku[F[_]] {
-  def get(): F[String]
+object LiveHaikus {
+  def make[F[_]: Effect](adjs: List[String], nouns: List[String], ra: Range): F[LiveHaikus[F]] =
+    Sync[F].delay(new LiveHaikus(adjs, nouns, ra))
 }
 
 /**
@@ -28,14 +28,14 @@ trait Haiku[F[_]] {
  * @param ra Range of numbers to use.
  * @param F
  */
-class HaikuImpl[F[_]](adjs: List[String], nouns: List[String], ra: Range)(implicit F: Effect[F])
-    extends Haiku[F] {
+class LiveHaikus[F[_]: Effect] private (adjs: List[String], nouns: List[String], ra: Range)
+    extends Haikus[F] {
 
   private def randomElement(xs: List[String]): F[String] =
-    F.pure(nextInt(xs.size)).map(xs(_))
+    Effect[F].pure(nextInt(xs.size)).map(xs(_))
 
   private def randomNumber(ra: Range): F[String] =
-    F.pure(nextInt(ra.end - ra.head)).map(random => (ra.head + random).toString)
+    Effect[F].pure(nextInt(ra.end - ra.head)).map(random => (ra.head + random).toString)
 
   /**
    * Create a random haiku.

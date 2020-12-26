@@ -4,14 +4,13 @@ import cats.effect._
 import cats.effect.testing.utest._
 import utest._
 
-object HaikuTests extends IOTestSuite {
-
-  private val haiku = new HaikuImpl[IO](List("adj"), List("noun"), 1 until 2)
+object HaikusTests extends IOTestSuite {
 
   override def tests: Tests = Tests {
     test("a simple haiku should be created from adjs, nouns and range") {
       for {
-        result <- haiku.get()
+        haikus <- LiveHaikus.make[IO](List("adj"), List("noun"), 1 until 2)
+        result <- haikus.get()
       } yield assert(result == "adj-noun-1")
     }
   }

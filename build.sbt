@@ -16,6 +16,8 @@ ThisBuild / scalafixDependencies += com.github.liancheng.`organize-imports`
 ThisBuild / publish / skip := true
 ThisBuild / githubWorkflowPublishTargetBranches := Seq()
 
+Docker / dockerExposedPorts ++= Seq(8080)
+
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 lazy val root = (project in file("."))
@@ -24,10 +26,13 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       ch.qos.logback,
       circe.`circe-generic`,
+      chrisdavenport.`log4cats-slf4j`,
+      com.github.pureconfig.pureconfig,
+      dev.profunktor.`redis4cats-effects`,
+      dev.profunktor.`redis4cats-log4cats`,
       org.http4s.`http4s-blaze-server`,
       org.http4s.`http4s-circe`,
       org.http4s.`http4s-dsl`,
-      org.log4s.log4s,
       org.typelevel.`cats-core`,
       org.typelevel.`cats-effect`
     ),
@@ -37,3 +42,4 @@ lazy val root = (project in file("."))
       com.lihaoyi.utest % Test
     )
   )
+  .enablePlugins(JavaAppPackaging, DockerPlugin)
