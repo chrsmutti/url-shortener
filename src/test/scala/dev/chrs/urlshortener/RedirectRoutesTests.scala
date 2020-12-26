@@ -4,7 +4,6 @@ import scala.collection.mutable
 
 import cats.effect._
 import cats.effect.testing.utest._
-import dev.chrs.urlshortener.Redirects.Error.AlreadyExists
 import io.circe.literal._
 import org.http4s._
 import org.http4s.circe._
@@ -12,11 +11,14 @@ import org.http4s.headers._
 import org.http4s.implicits._
 import utest._
 
+import Redirects.Error.AlreadyExists
+import Redirect.AbsoluteUri
+
 object RedirectRoutesTests extends IOTestSuite {
 
   private def existingRedirect: TestRedirects = new TestRedirects {
     override def get(id: String): IO[Option[Redirect]] =
-      IO.pure(Some(Redirect(uri"http://example.com")))
+      IO.pure(Some(Redirect(AbsoluteUri(uri"http://example.com"))))
   }
 
   private def insertRedirect(list: mutable.Buffer[String]): TestRedirects = new TestRedirects {
@@ -62,7 +64,7 @@ object RedirectRoutesTests extends IOTestSuite {
             Request(
               method = Method.POST,
               uri = uri"/"
-            ).withEntity(json"""{ "uri": "http://example.com" }""")
+            ).withEntity(json"""{ "url": "http://example.com" }""")
           )
           .value
       } yield for {
@@ -87,7 +89,7 @@ object RedirectRoutesTests extends IOTestSuite {
             Request(
               method = Method.POST,
               uri = uri"/creating-id"
-            ).withEntity(json"""{ "uri": "http://example.com" }""")
+            ).withEntity(json"""{ "url": "http://example.com" }""")
           )
           .value
       } yield for {
@@ -139,12 +141,46 @@ object RedirectRoutesTests extends IOTestSuite {
             Request(
               method = Method.POST,
               uri = uri"/creating-id"
-            ).withEntity(json"""{ "uri": "http://example.com" }""")
+            ).withEntity(json"""{ "url": "http://example.com" }""")
           )
           .value
       } yield for {
         response <- response
         _ = assert(response.status == Status.Conflict)
+      } yield response
+    }
+
+    test("when called with a relative urls should return Unprocessable Entity status") {
+      for {
+        service <- RedirectRoutes.make(new TestRedirects, new TestHaikus)
+        response <- service.routes
+          .run(
+            Request(
+              method = Method.POST,
+              uri = uri"/creating-id"
+            ).withEntity(json"""{ "url": "/relative" }""")
+          )
+          .value
+      } yield for {
+        response <- response
+        _ = assert(response.status == Status.UnprocessableEntity)
+      } yield response
+    }
+
+    test("when called without a scheme should return Unprocessable Entity status") {
+      for {
+        service <- RedirectRoutes.make(new TestRedirects, new TestHaikus)
+        response <- service.routes
+          .run(
+            Request(
+              method = Method.POST,
+              uri = uri"/creating-id"
+            ).withEntity(json"""{ "url": "example.com" }""")
+          )
+          .value
+      } yield for {
+        response <- response
+        _ = assert(response.status == Status.UnprocessableEntity)
       } yield response
     }
   }

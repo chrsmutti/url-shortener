@@ -7,6 +7,7 @@ import org.http4s.dsl.Http4sDsl
 import org.http4s.headers._
 
 import Redirects.Error._
+import Redirect.AbsoluteUri
 
 object RedirectRoutes {
   def make[F[_]: Sync](rr: Redirects[F], haiku: Haikus[F]): F[RedirectRoutes[F]] =
@@ -48,8 +49,8 @@ class RedirectRoutes[F[_]: Sync] private (rr: Redirects[F], haiku: Haikus[F]) ex
       // Navigating to an existing ID should return permanent redirect to the underlying URL.
       case GET -> Root / id =>
         rr.get(id).flatMap {
-          case Some(Redirect(uri)) => MovedPermanently(Location(uri))
-          case None                => NotFound()
+          case Some(Redirect(AbsoluteUri(uri))) => MovedPermanently(Location(uri))
+          case None                             => NotFound()
         }
 
       // Posting to an ID with a Redirect should create a redirect with that ID if it's not still in use,

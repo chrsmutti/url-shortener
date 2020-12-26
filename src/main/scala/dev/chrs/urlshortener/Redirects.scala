@@ -10,6 +10,7 @@ import org.http4s._
 
 import Redirects.Error
 import Redirects.Error._
+import Redirect.AbsoluteUri
 
 object Redirects {
   sealed abstract class Error extends Product with Serializable
@@ -49,6 +50,10 @@ class LiveRedirects[F[_]: ConcurrentEffect: ContextShift] private extends Redire
   }
 
   def get(id: String): F[Option[Redirect]] =
-    redis.use(_.get(key(id)).map(_.flatMap(Uri.fromString(_).toOption).map(Redirect(_))))
+    redis.use(
+      _.get(key(id)).map(
+        _.flatMap(Uri.fromString(_).toOption).map(uri => Redirect(AbsoluteUri(uri)))
+      )
+    )
 
 }
